@@ -10,6 +10,7 @@ export default function ImportantInfoSection() {
   const [informations, setInformations] = useState<ImportantInformation[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [loadingFileId, setLoadingFileId] = useState<number | null>(null);
 
   useEffect(() => {
     const loadInformations = async () => {
@@ -26,6 +27,25 @@ export default function ImportantInfoSection() {
     };
     loadInformations();
   }, []);
+
+  const handleViewFile = async (fileId: number) => {
+    try {
+      setLoadingFileId(fileId);
+      const result = await rhService.downloadFile(fileId);
+      if (result.success && result.url) {
+        window.open(result.url, '_blank');
+        // Nettoyer l'URL après un délai
+        setTimeout(() => URL.revokeObjectURL(result.url), 100);
+      }
+    } catch (error) {
+      console.error('Erreur lors de l\'ouverture du fichier:', error);
+      alert('Impossible d\'ouvrir le fichier');
+    } finally {
+      setLoadingFileId(null);
+    }
+  };
+
+
 
   const getColorClasses = (color: string) => {
     const colors = {
@@ -82,7 +102,7 @@ export default function ImportantInfoSection() {
             </p>
           </div>
           <div className="text-center py-12 bg-white dark:bg-gray-800 rounded-xl">
-            <span className="material-symbols-outlined text-6xl text-gray-300 dark:text-gray-600 mb-4">info</span>
+            <i className="bi bi-info-circle text-6xl text-gray-300 dark:text-gray-600 mb-4"></i>
             <p className="text-gray-500 dark:text-gray-400">
               Aucune information importante pour le moment.
             </p>
@@ -113,7 +133,7 @@ export default function ImportantInfoSection() {
               <div className="p-6 text-center">
                 {/* Icône */}
                 <div className={`w-20 h-20 mx-auto mb-4 rounded-full flex items-center justify-center ${getColorClasses(info.color)} group-hover:scale-110 transition-transform`}>
-                  <span className="material-symbols-outlined text-4xl">{info.icon}</span>
+                  <i className={`bi bi-${info.icon} text-4xl`}></i>
                 </div>
 
                 {/* Titre */}
@@ -140,17 +160,29 @@ export default function ImportantInfoSection() {
                     </a>
                   )}
                   {info.file && (
-                    <a
-                      href={info.file.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className={`inline-flex items-center justify-center w-full px-4 py-2 rounded-lg text-sm font-medium transition-colors ${getButtonColorClasses(info.color)}`}
+                    <button
+                      onClick={() => handleViewFile(info.file!.id)}
+                      disabled={loadingFileId === info.file.id}
+                      className="inline-flex items-center justify-center w-full px-5 py-2.5 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white text-sm font-medium rounded-full transition-all duration-300 shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M6 2a2 2 0 00-2 2v12a2 2 0 002 2h8a2 2 0 002-2V7.414A2 2 0 0015.414 6L12 2.586A2 2 0 0010.586 2H6zm5 6a1 1 0 10-2 0v3.586l-1.293-1.293a1 1 0 10-1.414 1.414l3 3a1 1 0 001.414 0l3-3a1 1 0 00-1.414-1.414L11 11.586V8z" clipRule="evenodd" />
-                      </svg>
-                      Télécharger
-                    </a>
+                      {loadingFileId === info.file.id ? (
+                        <>
+                          <svg className="animate-spin h-4 w-4 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          </svg>
+                          Chargement...
+                        </>
+                      ) : (
+                        <>
+                          <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
+                            <path fillRule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clipRule="evenodd" />
+                          </svg>
+                          Voir le document
+                        </>
+                      )}
+                    </button>
                   )}
                 </div>
               </div>
