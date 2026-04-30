@@ -7,10 +7,11 @@ import StudentServicesPage from '@pages/StudentServicesPage'
 import ApplicationPage from '@pages/ApplicationPage'
 import EnrollPage from '@pages/EnrollPage'
 import SuggestionsPage from '@pages/SuggestionsPage'
+import ChatBubble from './components/chat/ChatBubble'
 
 function App() {
   return (
-    <Router>
+    <Router basename='app-cap'>
       <Routes>
         <Route path="/" element={<HomePage />} />
         <Route path="/about" element={<AboutPage />} />
@@ -21,7 +22,11 @@ function App() {
         <Route path="/enroll" element={<EnrollPage />} />
         <Route path="/suggestions" element={<SuggestionsPage />} />
       </Routes>
+<ChatBubble />
+    
+    
     </Router>
+    
   )
 }
 
