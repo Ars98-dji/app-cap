@@ -268,6 +268,8 @@ export const styles: ChatStyles = {
     borderRadius: "24px 24px 0 24px",
     fontSize:     "17px",        // ← grand et lisible
     lineHeight:   "1.55",
+    wordBreak:    "break-word",
+    overflowWrap: "break-word",
     fontFamily:   "'Google Sans', 'Nunito', 'Segoe UI', system-ui, sans-serif",
     fontWeight:   "500",         // ← medium, pas trop gras
     display:      "flex",
@@ -281,6 +283,8 @@ export const styles: ChatStyles = {
     borderRadius: "24px 24px 24px 0",
     fontSize:     "17px",        // ← grand et lisible
     lineHeight:   "1.55",
+    wordBreak:    "break-word",
+    overflowWrap: "break-word",
     fontFamily:   "'Google Sans', 'Nunito', 'Segoe UI', system-ui, sans-serif",
     fontWeight:   "500",
     display:      "flex",
