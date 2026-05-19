@@ -4,6 +4,7 @@ import { styles } from './chatStyles'
 import { SendIcon, MinusIcon, ChevronUpIcon, XIcon, UserIcon } from './ChatIcons'
 import TypingDots from './TypingDots'
 import { normalizeMessage, containsTable, splitByTables } from '../../utils/formatMessage'
+import { useImagePreload } from '../../hooks/useImagePreload'
 import type { Message, PendingAction } from '../../types/chat'
 
 const LOGO = '/assets/img/cap.png'
@@ -180,6 +181,9 @@ export default function ChatWindow({
   const [inputFocused, setInputFocused] = useState(false)
   const [isMobile, setIsMobile] = useState(getIsMobile())
   const timesRef = useRef<Record<string, string>>({})
+
+  // Preload the logo image to prevent flickering
+  useImagePreload(LOGO)
 
   messages.forEach((msg) => {
     if (!timesRef.current[msg.id]) timesRef.current[msg.id] = getNow()
