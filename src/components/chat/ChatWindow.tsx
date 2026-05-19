@@ -6,7 +6,7 @@ import TypingDots from './TypingDots'
 import { normalizeMessage, containsTable, splitByTables } from '../../utils/formatMessage'
 import type { Message, PendingAction } from '../../types/chat'
 
-const LOGO = '/app-cap/assets/img/cap.png'
+const LOGO = '/assets/img/cap.png'
 
 const getIsMobile = (): boolean => window.innerWidth <= 640
 
