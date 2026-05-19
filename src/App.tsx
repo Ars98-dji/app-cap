@@ -11,7 +11,7 @@ import ChatBubble from './components/chat/ChatBubble'
 
 function App() {
   return (
-    <Router basename='app-cap'>
+   <Router basename='/'>
       <Routes>
         <Route path="/" element={<HomePage />} />
         <Route path="/about" element={<AboutPage />} />
