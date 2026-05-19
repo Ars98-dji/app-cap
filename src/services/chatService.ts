@@ -6,7 +6,10 @@ const API_URL: string =
 export async function sendMessage(request: ChatRequest): Promise<ChatResponse> {
   const response = await fetch(API_URL, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      'ngrok-skip-browser-warning': 'true',
+    },
     body: JSON.stringify(request),
   })
 
