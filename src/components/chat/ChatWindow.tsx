@@ -4,10 +4,10 @@ import { styles } from './chatStyles'
 import { SendIcon, MinusIcon, ChevronUpIcon, XIcon, UserIcon } from './ChatIcons'
 import TypingDots from './TypingDots'
 import { normalizeMessage, containsTable, splitByTables } from '../../utils/formatMessage'
-import { useImagePreload } from '../../hooks/useImagePreload'
 import type { Message, PendingAction } from '../../types/chat'
 
-const LOGO = '/assets/img/cap.png'
+// ⚠️  Un seul endroit pour le chemin du logo — tout le projet utilise cette constante
+export const CAP_LOGO_PATH = '/assets/img/cap.png'
 
 const getIsMobile = (): boolean => window.innerWidth <= 640
 
@@ -33,16 +33,20 @@ interface ChatWindowProps {
   pendingAction: PendingAction
 }
 
+// ── Styles de table ──────────────────────────────────────────────────────────
+// Correction clé : margin-top:0 sur .cap-table-wrap ET suppression des <p>/<br>
+// produits par DOMPurify avant la balise <table>
 const TABLE_STYLES = `
   .cap-table-wrap {
     width: 100%;
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
     border-radius: 8px;
-    margin-top: 0;
-    margin-bottom: 2px;
+    margin-top: 0 !important;
+    margin-bottom: 4px;
     background: #ffffff;
     box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+    display: block;
   }
   .cap-table-wrap table {
     border-collapse: collapse;
@@ -120,6 +124,18 @@ const TABLE_STYLES = `
   .cap-table-wrap::-webkit-scrollbar { height: 4px; }
   .cap-table-wrap::-webkit-scrollbar-track { background: transparent; }
   .cap-table-wrap::-webkit-scrollbar-thumb { background: #c5d9d5; border-radius: 4px; }
+
+  /* Supprime l'espace produit par les <p> et <br> DOMPurify avant/après les tables */
+  .cap-msg-body p:empty,
+  .cap-msg-body br:first-child {
+    display: none;
+  }
+  .cap-msg-body p { margin: 0 0 4px 0; }
+  .cap-msg-body p:last-child { margin-bottom: 0; }
+  .cap-msg-body .cap-table-wrap + p:empty,
+  .cap-msg-body p:empty + .cap-table-wrap {
+    margin-top: 0 !important;
+  }
 `
 
 const getNow = (): string => {
@@ -135,6 +151,18 @@ const timeStyle = (isUser: boolean): CSSProperties => ({
   marginTop: '2px',
   fontWeight: '400',
 })
+
+/**
+ * Nettoie le HTML avant la table :
+ * - supprime les <p></p> vides et <br> orphelins en tête
+ * - normalise pour que la table soit directement le premier enfant du wrapper
+ */
+function cleanPreTableHtml(html: string): string {
+  return html
+    .replace(/^(\s*(<br\s*\/?>|<p>\s*<\/p>|<p\s*\/>))+/gi, '')
+    .replace(/(\s*(<br\s*\/?>|<p>\s*<\/p>|<p\s*\/>))+$/gi, '')
+    .trim()
+}
 
 function BotMessageContent({ text, isHtml }: { text: string; isHtml?: boolean }) {
   const normalized = normalizeMessage(text, isHtml ?? false)
@@ -153,22 +181,36 @@ function BotMessageContent({ text, isHtml }: { text: string; isHtml?: boolean })
 
   return (
     <span className="cap-msg-body" style={{ display: 'block' }}>
-      {segments.map((seg, i) =>
-        seg.type === 'table' ? (
+      {segments.map((seg, i) => {
+        if (seg.type === 'table') {
+          return (
+            <span
+              key={i}
+              style={{ display: 'block', marginTop: i === 0 ? 0 : '4px' }}
+              dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(seg.content) }}
+            />
+          )
+        }
+        const cleaned = cleanPreTableHtml(seg.content)
+        if (!cleaned) return null
+        return (
           <span
             key={i}
-            style={{ display: 'block' }}
-            dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(seg.content) }}
-          />
-        ) : (
-          <span
-            key={i}
-            dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(seg.content) }}
+            dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(cleaned) }}
           />
         )
-      )}
+      })}
     </span>
   )
+}
+
+// ── Logo preload hook ─────────────────────────────────────────────────────────
+function useLogoPreload(src: string) {
+  useEffect(() => {
+    const img = new Image()
+    img.src = src
+    // Pas de ref nécessaire — le navigateur met en cache automatiquement
+  }, [src])
 }
 
 export default function ChatWindow({
@@ -182,8 +224,8 @@ export default function ChatWindow({
   const [isMobile, setIsMobile] = useState(getIsMobile())
   const timesRef = useRef<Record<string, string>>({})
 
-  // Preload the logo image to prevent flickering
-  useImagePreload(LOGO)
+  // Précharge le logo dès que ChatWindow est monté (avant que l'utilisateur ouvre le chat)
+  useLogoPreload(CAP_LOGO_PATH)
 
   messages.forEach((msg) => {
     if (!timesRef.current[msg.id]) timesRef.current[msg.id] = getNow()
@@ -235,12 +277,16 @@ export default function ChatWindow({
     <div ref={windowRef} style={getWindowStyle(minimized, isMobile)}>
       <style>{TABLE_STYLES}</style>
 
+      {/* ── Header ── */}
       <div style={styles.header}>
         <div style={styles.headerLeft}>
           <div style={styles.avatar}>
             <img
-              src={LOGO}
+              src={CAP_LOGO_PATH}
               alt="CAP-EPAC"
+              // fetchpriority="high" demande au navigateur de charger ce logo en priorité
+              fetchPriority="high"
+              loading="eager"
               style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }}
             />
           </div>
@@ -289,6 +335,7 @@ export default function ChatWindow({
 
       {!minimized && (
         <>
+          {/* ── Corps ── */}
           <div style={styles.body}>
             {messages.map((msg) => {
               const time = timesRef.current[msg.id] ?? getNow()
@@ -308,15 +355,22 @@ export default function ChatWindow({
                   <div style={styles.msgRowBot}>
                     <div style={styles.msgAvatar}>
                       <img
-                        src={LOGO}
+                        src={CAP_LOGO_PATH}
                         alt="CAP"
+                        loading="eager"
                         style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }}
                       />
                     </div>
                     <div
                       style={
                         containsTable(normalizeMessage(msg.text, msg.isHtml ?? false))
-                          ? { ...styles.botBubble, maxWidth: 'calc(100vw - 120px)', padding: '8px 10px 6px 10px', gap: '2px' }
+                          ? {
+                              ...styles.botBubble,
+                              maxWidth: 'calc(100vw - 120px)',
+                              // padding réduit pour les bulles avec tableau
+                              padding: '6px 8px 6px 8px',
+                              gap: '0px',
+                            }
                           : styles.botBubble
                       }
                     >
@@ -332,6 +386,7 @@ export default function ChatWindow({
             <div ref={endRef} />
           </div>
 
+          {/* ── Input ── */}
           <div style={styles.inputWrap}>
             <div style={styles.inputInner}>
               <input

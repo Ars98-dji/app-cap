@@ -1,8 +1,20 @@
 import { useState, useEffect, lazy, Suspense } from 'react'
 import { useChat } from '../../hooks/useChat'
 import ChatButton from './ChatButton'
+import { CAP_LOGO_PATH } from './ChatWindow'
 
 const ChatWindow = lazy(() => import('./ChatWindow'))
+
+/**
+ * Précharge le logo dès le montage du composant racine.
+ * Ainsi quand l'utilisateur ouvre le chat, l'image est déjà dans le cache navigateur.
+ */
+function preloadLogo(src: string): void {
+  if (typeof window === 'undefined') return
+  const img = new Image()
+  img.fetchPriority = 'high'
+  img.src = src
+}
 
 export default function ChatBubble(): JSX.Element {
   const [open, setOpen] = useState(false)
@@ -20,6 +32,11 @@ export default function ChatBubble(): JSX.Element {
     pendingAction,
     send,
   } = useChat()
+
+  // Précharge le logo immédiatement (pas seulement quand le chat s'ouvre)
+  useEffect(() => {
+    preloadLogo(CAP_LOGO_PATH)
+  }, [])
 
   const hasActiveChat = messages.length > 1
 
