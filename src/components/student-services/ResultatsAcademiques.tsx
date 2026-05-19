@@ -131,11 +131,11 @@ const ResultatsAcademiques = () => {
         <>
           <div className="flex justify-between items-center">
             <div>
-              <h3 className="text-2xl font-bold text-text-main dark:text-white flex items-center gap-2">
+              <h3 className="text-xl font-bold text-text-main dark:text-white flex items-center gap-2">
                 <span className="material-symbols-outlined text-purple-600">assessment</span>
                 Consultation des Résultats
               </h3>
-              <p className="text-text-secondary dark:text-gray-400 mt-1">
+              <p className="text-text-secondary dark:text-gray-400 mt-0.5">
                 Accédez à vos notes et relevés académiques
               </p>
             </div>
@@ -279,7 +279,7 @@ const ResultatsAcademiques = () => {
 
       {/* Étape 3: Affichage des résultats */}
       {step === 'results' && results && student && (
-        <div className="space-y-6">
+        <div className="space-y-4">
           <div className="flex justify-between items-center">
             <div>
               <h3 className="text-2xl font-bold text-text-main dark:text-white flex items-center gap-2">
@@ -308,22 +308,22 @@ const ResultatsAcademiques = () => {
             </div>
           </div>
 
-          <div className="bg-white dark:bg-surface-dark rounded-xl border border-border-light dark:border-border-dark p-6">
-            <div className="bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg p-4 mb-6">
-              <h5 className="font-bold text-text-main dark:text-white mb-3 flex items-center gap-2">
+          <div className="bg-white dark:bg-surface-dark rounded-xl border border-border-light dark:border-border-dark p-4">
+            <div className="bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg p-3 mb-4">
+              <h5 className="font-bold text-text-main dark:text-white mb-2 flex items-center gap-2">
                 <span className="material-symbols-outlined">school</span>
                 Informations académiques
               </h5>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div className="flex items-center gap-2">
-                  <span className="material-symbols-outlined text-purple-600 text-[18px]">calendar_today</span>
+                  <span className="material-symbols-outlined text-purple-600 text-[16px]">calendar_today</span>
                   <div>
                     <p className="text-xs text-text-secondary dark:text-gray-400">Année</p>
                     <p className="font-semibold text-text-main dark:text-white">{results.academic_info.academic_year}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="material-symbols-outlined text-purple-600 text-[18px]">stairs</span>
+                  <span className="material-symbols-outlined text-purple-600 text-[16px]">stairs</span>
                   <div>
                     <p className="text-xs text-text-secondary dark:text-gray-400">Niveau</p>
                     <p className="font-semibold text-text-main dark:text-white">{results.academic_info.level}</p>
@@ -333,24 +333,24 @@ const ResultatsAcademiques = () => {
             </div>
 
             {/* Résumé */}
-            <h5 className="font-bold text-text-main dark:text-white mb-4 flex items-center gap-2">
+            <h5 className="font-bold text-text-main dark:text-white mb-2 flex items-center gap-2">
               <span className="material-symbols-outlined">summarize</span>
               Résumé des résultats
             </h5>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-              <div className="p-4 rounded-lg border border-border-light dark:border-border-dark bg-gradient-to-br from-purple-50 to-white dark:from-purple-900/20 dark:to-surface-dark">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 mb-4">
+              <div className="p-3 rounded-lg border border-border-light dark:border-border-dark bg-gradient-to-br from-purple-50 to-white dark:from-purple-900/20 dark:to-surface-dark">
                 <p className="text-xs text-text-secondary dark:text-gray-400 mb-1">Moyenne Générale</p>
-                <p className={`text-3xl font-bold text-${getGradeColor(results.summary.general_average)}-600 dark:text-${getGradeColor(results.summary.general_average)}-400`}>
+                <p className={`text-2xl font-bold text-${getGradeColor(results.summary.general_average)}-600 dark:text-${getGradeColor(results.summary.general_average)}-400`}>
                   {results.summary.general_average.toFixed(2)}/20
                 </p>
               </div>
-              <div className="p-4 rounded-lg border border-border-light dark:border-border-dark bg-gradient-to-br from-blue-50 to-white dark:from-blue-900/20 dark:to-surface-dark">
+              <div className="p-3 rounded-lg border border-border-light dark:border-border-dark bg-gradient-to-br from-blue-50 to-white dark:from-blue-900/20 dark:to-surface-dark">
                 <p className="text-xs text-text-secondary dark:text-gray-400 mb-1">Crédits Obtenus</p>
-                <p className="text-3xl font-bold text-blue-600 dark:text-blue-400">
+                <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">
                   {results.summary.obtained_credits}/{results.summary.total_credits}
                 </p>
               </div>
-              <div className="p-4 rounded-lg border border-border-light dark:border-border-dark bg-gradient-to-br from-orange-50 to-white dark:from-orange-900/20 dark:to-surface-dark">
+              <div className="p-3 rounded-lg border border-border-light dark:border-border-dark bg-gradient-to-br from-orange-50 to-white dark:from-orange-900/20 dark:to-surface-dark">
                 <p className="text-xs text-text-secondary dark:text-gray-400 mb-1">Décision Annuelle</p>
                 <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-semibold bg-${getDecisionColor(results.summary.year_decision)}-100 dark:bg-${getDecisionColor(results.summary.year_decision)}-900/20 text-${getDecisionColor(results.summary.year_decision)}-700 dark:text-${getDecisionColor(results.summary.year_decision)}-400`}>
                   {getDecisionLabel(results.summary.year_decision)}
@@ -359,7 +359,7 @@ const ResultatsAcademiques = () => {
             </div>
 
             {/* Tableau des résultats */}
-            <h5 className="font-bold text-text-main dark:text-white mb-4 flex items-center gap-2">
+            <h5 className="font-bold text-text-main dark:text-white mb-2 flex items-center gap-2">
               <span className="material-symbols-outlined">table_chart</span>
               Détail des Notes
             </h5>
@@ -372,41 +372,41 @@ const ResultatsAcademiques = () => {
                   <table className="w-full">
                     <thead className="bg-slate-50 dark:bg-slate-800 border-b border-border-light dark:border-border-dark">
                       <tr>
-                        <th className="px-4 py-3 text-left text-xs font-semibold text-text-main dark:text-white uppercase">Matière</th>
-                        <th className="px-4 py-3 text-center text-xs font-semibold text-text-main dark:text-white uppercase">Code</th>
-                        <th className="px-4 py-3 text-left text-xs font-semibold text-text-main dark:text-white uppercase">Enseignant</th>
-                        <th className="px-4 py-3 text-center text-xs font-semibold text-text-main dark:text-white uppercase">Sem.</th>
-                        <th className="px-4 py-3 text-center text-xs font-semibold text-text-main dark:text-white uppercase">Crédits</th>
-                        <th className="px-4 py-3 text-center text-xs font-semibold text-text-main dark:text-white uppercase">Coef.</th>
-                        <th className="px-4 py-3 text-center text-xs font-semibold text-text-main dark:text-white uppercase">Moyenne</th>
+                        <th className="px-3 py-2 text-left text-xs font-semibold text-text-main dark:text-white uppercase">Matière</th>
+                        <th className="px-3 py-2 text-center text-xs font-semibold text-text-main dark:text-white uppercase">Code</th>
+                        <th className="px-3 py-2 text-left text-xs font-semibold text-text-main dark:text-white uppercase">Enseignant</th>
+                        <th className="px-3 py-2 text-center text-xs font-semibold text-text-main dark:text-white uppercase">Sem.</th>
+                        <th className="px-3 py-2 text-center text-xs font-semibold text-text-main dark:text-white uppercase">Crédits</th>
+                        <th className="px-3 py-2 text-center text-xs font-semibold text-text-main dark:text-white uppercase">Coef.</th>
+                        <th className="px-3 py-2 text-center text-xs font-semibold text-text-main dark:text-white uppercase">Moyenne</th>
                         {hasRetake && (
-                          <th className="px-4 py-3 text-center text-xs font-semibold text-text-main dark:text-white uppercase">Rattrapage</th>
+                          <th className="px-3 py-2 text-center text-xs font-semibold text-text-main dark:text-white uppercase">Rattrapage</th>
                         )}
-                        <th className="px-4 py-3 text-center text-xs font-semibold text-text-main dark:text-white uppercase">Statut</th>
+                        <th className="px-3 py-2 text-center text-xs font-semibold text-text-main dark:text-white uppercase">Statut</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-border-light dark:divide-border-dark">
                       {results.results.map((course, index: number) => (
                         <tr key={index} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
-                          <td className="px-4 py-3 text-sm font-medium text-text-main dark:text-white">{course.course_name}</td>
-                          <td className="px-4 py-3 text-center">
+                          <td className="px-3 py-2 text-sm font-medium text-text-main dark:text-white">{course.course_name}</td>
+                          <td className="px-3 py-2 text-center">
                             <code className="text-xs bg-slate-100 dark:bg-slate-700 px-2 py-1 rounded">{course.course_code || '-'}</code>
                           </td>
-                          <td className="px-4 py-3 text-sm text-text-secondary dark:text-gray-400">{course.professor}</td>
-                          <td className="px-4 py-3 text-center text-sm text-text-secondary dark:text-gray-400">
+                          <td className="px-3 py-2 text-sm text-text-secondary dark:text-gray-400">{course.professor}</td>
+                          <td className="px-3 py-2 text-center text-sm text-text-secondary dark:text-gray-400">
                             {course.semester ? `S${course.semester}` : '-'}
                           </td>
-                          <td className="px-4 py-3 text-center text-sm font-semibold text-text-main dark:text-white">{course.credits}</td>
-                          <td className="px-4 py-3 text-center text-sm font-semibold text-text-main dark:text-white">{course.coefficient}</td>
-                          <td className="px-4 py-3 text-center">
-                            <span className={`inline-block px-3 py-1 bg-${getGradeColor(course.final_average)}-100 dark:bg-${getGradeColor(course.final_average)}-900/20 text-${getGradeColor(course.final_average)}-700 dark:text-${getGradeColor(course.final_average)}-400 rounded-full text-sm font-semibold`}>
+                          <td className="px-3 py-2 text-center text-sm font-semibold text-text-main dark:text-white">{course.credits}</td>
+                          <td className="px-3 py-2 text-center text-sm font-semibold text-text-main dark:text-white">{course.coefficient}</td>
+                          <td className="px-3 py-2 text-center">
+                            <span className={`inline-block px-2 py-0.5 bg-${getGradeColor(course.final_average)}-100 dark:bg-${getGradeColor(course.final_average)}-900/20 text-${getGradeColor(course.final_average)}-700 dark:text-${getGradeColor(course.final_average)}-400 rounded-full text-xs font-semibold`}>
                               {course.final_average.toFixed(2)}
                             </span>
                           </td>
                           {hasRetake && (
-                            <td className="px-4 py-3 text-center">
+                            <td className="px-3 py-2 text-center">
                               {course.retake_average !== null ? (
-                                <span className={`inline-block px-3 py-1 bg-${getGradeColor(course.retake_average)}-100 dark:bg-${getGradeColor(course.retake_average)}-900/20 text-${getGradeColor(course.retake_average)}-700 dark:text-${getGradeColor(course.retake_average)}-400 rounded-full text-sm font-semibold`}>
+                                <span className={`inline-block px-2 py-0.5 bg-${getGradeColor(course.retake_average)}-100 dark:bg-${getGradeColor(course.retake_average)}-900/20 text-${getGradeColor(course.retake_average)}-700 dark:text-${getGradeColor(course.retake_average)}-400 rounded-full text-xs font-semibold`}>
                                   {course.retake_average.toFixed(2)}
                                 </span>
                               ) : (
@@ -414,15 +414,15 @@ const ResultatsAcademiques = () => {
                               )}
                             </td>
                           )}
-                          <td className="px-4 py-3 text-center">
+                          <td className="px-3 py-2 text-center">
                             {course.validated ? (
-                              <span className="inline-flex items-center gap-1 px-3 py-1 bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-400 rounded-full text-xs font-semibold">
-                                <span className="material-symbols-outlined text-[14px]">check_circle</span>
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-400 rounded-full text-xs font-semibold">
+                                <span className="material-symbols-outlined text-[12px]">check_circle</span>
                                 Validé
                               </span>
                             ) : (
-                              <span className="inline-flex items-center gap-1 px-3 py-1 bg-red-100 dark:bg-red-900/20 text-red-700 dark:text-red-400 rounded-full text-xs font-semibold">
-                                <span className="material-symbols-outlined text-[14px]">cancel</span>
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-red-100 dark:bg-red-900/20 text-red-700 dark:text-red-400 rounded-full text-xs font-semibold">
+                                <span className="material-symbols-outlined text-[12px]">cancel</span>
                                 Non validé
                               </span>
                             )}
@@ -435,7 +435,7 @@ const ResultatsAcademiques = () => {
               })()}
             </div>
 
-            <div className="pt-6 border-t border-border-light dark:border-border-dark mt-6 flex gap-3 flex-wrap">
+            <div className="pt-4 border-t border-border-light dark:border-border-dark mt-4 flex gap-3 flex-wrap">
               <button
                 onClick={() => setStep('select')}
                 className="px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 font-medium hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors flex items-center gap-2"

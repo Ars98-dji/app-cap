@@ -127,7 +127,7 @@ export const styles: ChatStyles = {
     zIndex:         9998,
     border:        "1px solid #e5e7eb",
     borderBottom:  "none",
-    fontFamily:    "'Segoe UI', system-ui, sans-serif",
+    fontFamily:   "'Google Sans', 'Nunito', 'Segoe UI', system-ui, sans-serif",
     transition:    "height 0.3s ease",
   },
   windowMobileMinimized: {
@@ -261,21 +261,31 @@ export const styles: ChatStyles = {
     gap:        "8px",
     maxWidth:   "85%",
   },
-  userBubble: {
+   userBubble: {
     background:   BRAND,
     color:        "white",
-    padding:      "12px 16px",
+    padding:      "14px 18px 10px 18px",
     borderRadius: "24px 24px 0 24px",
-    fontSize:     "16px",
-    lineHeight:   "1.6",
+    fontSize:     "17px",        // ← grand et lisible
+    lineHeight:   "1.55",
+    fontFamily:   "'Google Sans', 'Nunito', 'Segoe UI', system-ui, sans-serif",
+    fontWeight:   "500",         // ← medium, pas trop gras
+    display:      "flex",
+    flexDirection:"column" as const,
+    gap:          "6px",
   },
   botBubble: {
     background:   "#f0f2f5",
-    color:        "#01050c",
-    padding:      "12px 16px",
+    color:        "#111827",
+    padding:      "14px 18px 10px 18px",
     borderRadius: "24px 24px 24px 0",
-    fontSize:     "16px",
-    lineHeight:   "1.6",
+    fontSize:     "17px",        // ← grand et lisible
+    lineHeight:   "1.55",
+    fontFamily:   "'Google Sans', 'Nunito', 'Segoe UI', system-ui, sans-serif",
+    fontWeight:   "500",
+    display:      "flex",
+    flexDirection:"column" as const,
+    gap:          "6px",
   },
   msgAvatar: {
     width:          "32px",
