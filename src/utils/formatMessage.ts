@@ -1,153 +1,252 @@
-const MARKDOWN_TABLE_RE = /\|.+\|/
-const TAB_TABLE_RE = /^[^\t]+\t[^\t]/
+/**
+ * utils/formatMessage.ts — CAP-EPAC v12
+ * ========================================
+ * Conversion Markdown → HTML + split text/table
+ *
+ * CORRECTIONS v12 :
+ * - Suppression des <br> ET des lignes vides AVANT/APRÈS chaque tableau
+ * - Conversion markdown table → cap-table-wrap en une seule passe (avant toute
+ *   autre conversion), pour éviter que les \n autour du tableau soient déjà
+ *   convertis en <br> quand on essaie de les supprimer
+ * - trimSegment() : nettoie chaque segment texte individuellement des <br>
+ *   orphelins en tête et en queue
+ * - containsTable / splitByTables : robustes sur les deux cas (HTML reçu du
+ *   backend ET Markdown converti côté frontend)
+ */
 
-function countTabs(line: string): number {
-  return (line.match(/\t/g) || []).length
-}
+// ── Regex ────────────────────────────────────────────────────────────────────
 
-function lineToCells(line: string, sep: string): string[] {
-  return line.split(sep).map((c) => c.trim()).filter((c) => c.length > 0)
-}
+/** Détecte une ligne de séparation de table markdown : |---|---|  ou  :---:  */
+const MD_TABLE_SEP = /^\|?[\s]*:?-+:?[\s]*(\|[\s]*:?-+:?[\s]*)+\|?[\s]*$/
 
-export function markdownToHtml(text: string): string {
-  const lines = text.split('\n')
-  const out: string[] = []
-  let inTable = false
-  let tableRows: string[] = []
-  let tableSep = '|'
+/** Détecte une ligne de tableau markdown (commence et/ou finit par |) */
+const MD_TABLE_ROW = /^\|.+\|[\s]*$/
 
-  const flushTable = () => {
-    if (tableRows.length === 0) return
-    let html = '<div class="cap-table-wrap"><table>'
-    tableRows.forEach((row, i) => {
-      const cells = lineToCells(row, tableSep)
-      if (i === 0) {
-        html += '<thead><tr>' + cells.map((c) => `<th>${c}</th>`).join('') + '</tr></thead><tbody>'
-      } else {
-        html += '<tr>' + cells.map((c) => `<td>${c}</td>`).join('') + '</tr>'
-      }
-    })
-    html += '</tbody></table></div>'
-    out.push(html)
-    tableRows = []
-    inTable = false
-  }
+/** Correspond à un bloc HTML cap-table-wrap (déjà converti) */
+const HTML_TABLE_RE = /<div[^>]*class=["']cap-table-wrap["'][^>]*>[\s\S]*?<\/div>/gi
 
-  for (let i = 0; i < lines.length; i++) {
-    const trimmed = lines[i].trim()
+// ── Helpers ──────────────────────────────────────────────────────────────────
 
-    if (/^\|[\s\-:|]+\|/.test(trimmed)) continue
-
-    const isPipeTable = trimmed.startsWith('|') && trimmed.endsWith('|')
-    const tabCount = countTabs(trimmed)
-
-    if (isPipeTable) {
-      if (!inTable) { inTable = true; tableSep = '|' }
-      tableRows.push(trimmed)
-      continue
-    }
-
-    if (!inTable && tabCount >= 2 && i + 1 < lines.length) {
-      const nextTabs = countTabs(lines[i + 1].trim())
-      if (nextTabs >= 2) {
-        inTable = true
-        tableSep = '\t'
-        tableRows.push(trimmed)
-        continue
-      }
-    }
-
-    if (inTable) {
-      if (tabCount >= 2) {
-        tableRows.push(trimmed)
-        continue
-      }
-      flushTable()
-    }
-
-    if (/^### (.+)/.test(trimmed)) {
-      out.push(`<strong style="display:block;margin-top:4px;margin-bottom:2px;font-size:12px;">${trimmed.replace(/^### /, '')}</strong>`)
-      continue
-    }
-    if (/^## (.+)/.test(trimmed)) {
-      out.push(`<strong style="display:block;margin-top:4px;margin-bottom:2px;font-size:13px;">${trimmed.replace(/^## /, '')}</strong>`)
-      continue
-    }
-    if (/^# (.+)/.test(trimmed)) {
-      out.push(`<strong style="display:block;margin-top:4px;margin-bottom:2px;font-size:14px;">${trimmed.replace(/^# /, '')}</strong>`)
-      continue
-    }
-
-    if (/^[*\-] (.+)/.test(trimmed)) {
-      out.push(`• ${trimmed.replace(/^[*\-] /, '')}<br>`)
-      continue
-    }
-
-    if (trimmed === '') {
-      out.push('<br>')
-      continue
-    }
-
-    const formatted = trimmed
-      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-      .replace(/\*(.+?)\*/g, '<em>$1</em>')
-    out.push(formatted + '<br>')
-  }
-
-  if (inTable) flushTable()
-
-  return collapseBr(out.join(''))
-}
-
-function collapseBr(html: string): string {
-  html = html.replace(/(<br\s*\/?>\s*)+/gi, '<br>')
-  html = html.replace(/(<br\s*\/?>\s*)+(?=<div\s+class="cap-table-wrap"|<table[\s>])/gi, '')
+/** Nettoie les <br>, &nbsp; et espaces orphelins en tête et queue d'une chaîne HTML */
+function trimBr(html: string): string {
   return html
+    .replace(/^(\s*(<br\s*\/?>|&nbsp;|<p>\s*<\/p>|<p\s*\/>)\s*)+/gi, '')
+    .replace(/(\s*(<br\s*\/?>|&nbsp;|<p>\s*<\/p>|<p\s*\/>)\s*)+$/gi, '')
+    .trim()
 }
 
-export function containsTable(html: string): boolean {
-  return /<table[\s>]/i.test(html)
+// ── Conversion Markdown table → HTML ─────────────────────────────────────────
+
+/**
+ * Transforme un bloc de lignes markdown (tableau) en HTML prêt à l'emploi.
+ * Retourne null si le bloc n'est pas un tableau valide.
+ */
+function mdTableToHtml(lines: string[]): string | null {
+  if (lines.length < 2) return null
+
+  // Trouver la ligne de séparation
+  const sepIdx = lines.findIndex((l) => MD_TABLE_SEP.test(l))
+  if (sepIdx < 1) return null
+
+  const headerLine = lines[sepIdx - 1]
+  const dataLines = lines.slice(sepIdx + 1)
+
+  const parseRow = (line: string): string[] =>
+    line
+      .replace(/^\|/, '')
+      .replace(/\|$/, '')
+      .split('|')
+      .map((cell) => cell.trim())
+
+  const headers = parseRow(headerLine)
+  if (headers.length === 0) return null
+
+  const thead =
+    '<thead><tr>' +
+    headers.map((h) => `<th>${escapeHtml(h)}</th>`).join('') +
+    '</tr></thead>'
+
+  const tbody =
+    '<tbody>' +
+    dataLines
+      .filter((l) => l.trim() && MD_TABLE_ROW.test(l))
+      .map((l) => {
+        const cells = parseRow(l)
+        // Complète si moins de colonnes que le header
+        while (cells.length < headers.length) cells.push('')
+        return '<tr>' + cells.map((c) => `<td>${escapeHtml(c)}</td>`).join('') + '</tr>'
+      })
+      .join('') +
+    '</tbody>'
+
+  return `<div class="cap-table-wrap"><table>${thead}${tbody}</table></div>`
 }
 
-export function normalizeMessage(text: string, isHtml: boolean): string {
-  if (isHtml) return text.replace(/\n/g, '<br>').replace(/(<br\s*\/?>\s*)+(?=<div\s+class="cap-table-wrap"|<table\s)/gi, '')
-
-  if (MARKDOWN_TABLE_RE.test(text) || TAB_TABLE_RE.test(text) || /^#{1,3} /m.test(text) || /^[*\-] /m.test(text)) {
-    return markdownToHtml(text)
-  }
-
-  return text
+function escapeHtml(str: string): string {
+  return str
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
-    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-    .replace(/\n/g, '<br>')
+    .replace(/'/g, '&#039;')
 }
 
-export function splitByTables(html: string): Array<{ type: 'text' | 'table'; content: string }> {
-  const parts: Array<{ type: 'text' | 'table'; content: string }> = []
-  const regex = /(<div class="cap-table-wrap">[\s\S]*?<\/div>|<table[\s\S]*?<\/table>)/gi
+/**
+ * Convertit tous les blocs de tableau markdown en HTML, AVANT de convertir les \n en <br>.
+ * C'est l'ordre qui est critique : si on convertit les \n en <br> d'abord,
+ * les séparateurs de lignes du tableau ne sont plus reconnus.
+ */
+function convertMarkdownTables(text: string): string {
+  const lines = text.split('\n')
+  const result: string[] = []
+  let tableBuffer: string[] = []
+  let inTable = false
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i]
+    const isTableRow = MD_TABLE_ROW.test(line) || MD_TABLE_SEP.test(line)
+
+    if (isTableRow) {
+      if (!inTable) inTable = true
+      tableBuffer.push(line)
+    } else {
+      if (inTable) {
+        // Fin du bloc tableau — convertir
+        const html = mdTableToHtml(tableBuffer)
+        if (html) {
+          result.push(html)
+        } else {
+          result.push(...tableBuffer)
+        }
+        tableBuffer = []
+        inTable = false
+      }
+      result.push(line)
+    }
+  }
+
+  // Tableau en fin de texte
+  if (inTable && tableBuffer.length > 0) {
+    const html = mdTableToHtml(tableBuffer)
+    if (html) {
+      result.push(html)
+    } else {
+      result.push(...tableBuffer)
+    }
+  }
+
+  return result.join('\n')
+}
+
+// ── Conversion Markdown générale → HTML ──────────────────────────────────────
+
+function convertMarkdownToHtml(text: string): string {
+  return (
+    text
+      // Bold **text** ou __text__
+      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+      .replace(/__(.*?)__/g, '<strong>$1</strong>')
+      // Italic *text* ou _text_
+      .replace(/\*(.*?)\*/g, '<em>$1</em>')
+      .replace(/_(.*?)_/g, '<em>$1</em>')
+      // Bullet points (* item ou - item) — seulement en début de ligne
+      .replace(/^[*\-]\s+(.+)$/gm, '<li>$1</li>')
+      // Sauts de ligne → <br>  (APRÈS la conversion des tableaux)
+      .replace(/\n/g, '<br>')
+      // Listes : regrouper les <li> consécutifs
+      .replace(/(<li>.*?<\/li>)(<br>(<li>.*?<\/li>))*/g, (m) =>
+        '<ul style="margin:4px 0 4px 16px;padding:0">' + m.replace(/<br>/g, '') + '</ul>'
+      )
+      // Nettoyer les <br> autour des div/ul/table (éléments bloc)
+      .replace(/(<br>)+(<div|<ul|<table)/gi, '$2')
+      .replace(/(<\/div>|<\/ul>|<\/table>)(<br>)+/gi, '$1')
+      // Double <br> → simple
+      .replace(/(<br>){3,}/gi, '<br><br>')
+  )
+}
+
+// ── API publique ──────────────────────────────────────────────────────────────
+
+/**
+ * Normalise le message : si c'est du HTML brut (venant du backend), on le nettoie.
+ * Si c'est du Markdown (venant du LLM), on le convertit en HTML.
+ */
+export function normalizeMessage(text: string, isHtml: boolean): string {
+  if (!text) return ''
+
+  if (isHtml) {
+    // Le backend envoie déjà du HTML — nettoyer seulement les <br> autour des blocs
+    return text
+      .replace(/(<br\s*\/?>)+(<div[^>]*class=["']cap-table-wrap)/gi, '$2')
+      .replace(/(cap-table-wrap[^>]*>[\s\S]*?<\/div>)(<br\s*\/?>)+/gi, '$1')
+      .replace(/(<br>){3,}/gi, '<br><br>')
+  }
+
+  // 1. Convertir les tableaux Markdown en HTML en premier (avant les \n → <br>)
+  const withTables = convertMarkdownTables(text)
+
+  // 2. Convertir le reste du Markdown en HTML
+  const html = convertMarkdownToHtml(withTables)
+
+  // 3. Nettoyer les <br> résiduels autour des blocs HTML générés
+  return html
+    .replace(/(<br\s*\/?>)+(<div[^>]*class=["']cap-table-wrap)/gi, '$2')
+    .replace(/(cap-table-wrap[^>]*>[\s\S]*?<\/div>)(<br\s*\/?>)+/gi, '$1')
+}
+
+/** Vérifie si le HTML normalisé contient un tableau */
+export function containsTable(html: string): boolean {
+  return html.includes('cap-table-wrap') || html.includes('<table')
+}
+
+type Segment = { type: 'text' | 'table'; content: string }
+
+/**
+ * Découpe le HTML en segments alternés texte/tableau.
+ * Chaque segment texte est nettoyé des <br> orphelins en tête/queue.
+ */
+export function splitByTables(html: string): Segment[] {
+  const segments: Segment[] = []
+
+  // Séparer sur les div.cap-table-wrap ET les <table> directes (fallback)
+  const tablePattern =
+    /(<div[^>]*class=["']cap-table-wrap["'][^>]*>[\s\S]*?<\/div>|<table[\s\S]*?<\/table>)/gi
+
   let lastIndex = 0
   let match: RegExpExecArray | null
 
-  while ((match = regex.exec(html)) !== null) {
+  tablePattern.lastIndex = 0
+  while ((match = tablePattern.exec(html)) !== null) {
+    // Segment texte avant le tableau
     if (match.index > lastIndex) {
-      const before = html.slice(lastIndex, match.index)
-      if (before.trim()) parts.push({ type: 'text', content: before })
+      const textContent = trimBr(html.slice(lastIndex, match.index))
+      if (textContent) {
+        segments.push({ type: 'text', content: textContent })
+      }
     }
-    const tableHtml = match[1].startsWith('<div class="cap-table-wrap">')
-      ? match[1]
-      : `<div class="cap-table-wrap">${match[1]}</div>`
-    parts.push({ type: 'table', content: tableHtml })
+
+    // Enveloppe la table dans cap-table-wrap si elle ne l'est pas déjà
+    let tableHtml = match[0]
+    if (!tableHtml.includes('cap-table-wrap')) {
+      tableHtml = `<div class="cap-table-wrap">${tableHtml}</div>`
+    }
+    segments.push({ type: 'table', content: tableHtml })
+
     lastIndex = match.index + match[0].length
   }
 
+  // Segment texte après le dernier tableau
   if (lastIndex < html.length) {
-    const remaining = html.slice(lastIndex)
-    if (remaining.trim()) parts.push({ type: 'text', content: remaining })
+    const textContent = trimBr(html.slice(lastIndex))
+    if (textContent) {
+      segments.push({ type: 'text', content: textContent })
+    }
   }
 
-  if (parts.length === 0) parts.push({ type: 'text', content: html })
-  return parts
+  // Si aucun tableau trouvé, retourner le tout comme texte
+  if (segments.length === 0) {
+    segments.push({ type: 'text', content: html })
+  }
+
+  return segments
 }
